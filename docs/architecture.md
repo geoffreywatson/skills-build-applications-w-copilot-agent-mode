@@ -32,9 +32,11 @@ Keep the three tiers separate: React pages render API data, Express routes deleg
 to service functions, and Mongoose models persist and validate records. Do not add
 authentication in this exercise.
 
-- **Presentation tier:** Use React 19 pages and React Router for the four capabilities,
-  Bootstrap for layout, and `src/api/client.ts` for relative `/api` requests. Each page
-  must expose accessible loading, empty, and error states as well as successful data.
+- **Presentation tier decision:** Build a client-rendered React 19 single-page application.
+  React Router maps the activities, teams, leaderboard, and workout suggestions pages;
+  each page fetches its data through the shared `src/api/client.ts` client using relative
+  `/api` paths. Use Bootstrap for layout and give every page accessible loading, empty,
+  success, and error states.
 - **Logic tier:** Keep `/api/*` handlers thin; put request validation and business rules
   in explicit service functions. Return deliberate 4xx responses for invalid input,
   malformed IDs, missing referenced records, and unknown users rather than leaking

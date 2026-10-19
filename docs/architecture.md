@@ -28,22 +28,47 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 
 ## Implementation decisions
 
-Record your plan here before editing code.
+Keep the three tiers separate: React pages render API data, Express routes delegate behavior
+to service functions, and Mongoose models persist and validate records. Do not add
+authentication in this exercise.
 
-- Presentation tier decision:
-- Logic tier decision:
-- Data tier decision:
-- Activity tracking approach:
-- Team management approach:
-- Leaderboard approach:
-- Workout suggestions approach:
+- **Presentation tier:** Use React 19 pages and React Router for the four capabilities,
+  Bootstrap for layout, and `src/api/client.ts` for relative `/api` requests. Each page
+  must expose accessible loading, empty, and error states as well as successful data.
+- **Logic tier:** Keep `/api/*` handlers thin; put request validation and business rules
+  in explicit service functions. Return deliberate 4xx responses for invalid input,
+  malformed IDs, missing referenced records, and unknown users rather than leaking
+  Mongoose cast errors as 500 responses.
+- **Data tier:** Use Mongoose models for users, teams, activities, and workouts. Enforce
+  required fields and valid values in schemas, and use the shared MongoDB connection
+  configuration (`mongodb://localhost:27017/octofit_db` by default). Seed stable demo
+  records with upserts; do not clear application data, and remove a demo user's previous
+  team membership when moving that fixture.
+- **Activity tracking:** Accept a user ID, team ID, activity type, and positive minutes;
+  validate the ID formats and that both records exist before saving. Store the user,
+  team, type, minutes, server-computed points (one point per minute), and occurrence
+  time. List saved activities through the API.
+- **Team management:** Create teams with a non-empty name, mascot, and member list
+  (empty by default); reject missing names with `400`. Validate member references and
+  preserve the submitted team name and mascot in create and list responses.
+- **Leaderboard:** Aggregate persisted activity points by team, order teams from
+  highest to lowest total, and return `teamName`, `totalPoints`, and sequential,
+  1-based ranks.
+- **Workout suggestions:** Find the user by email and match workouts to their fitness
+  goal or recent activity pattern, returning a reason with each recommendation. Return
+  a deliberate 4xx response if no user matches the requested email.
 
 ## Test plan
 
-Record the commands you run and what each failure means.
+Run these focused checks after implementing the capabilities. A failing contract test
+means the behavior named below is missing or does not match the API/data/UI contract;
+build failures indicate compile-time or production-bundle issues rather than a runtime
+contract failure.
 
-- Data-tier command: `npm run test:data --prefix octofit-tracker/backend`
-- API command: `npm run test:api --prefix octofit-tracker/backend`
-- Frontend command: `npm test --prefix octofit-tracker/frontend`
-- Backend build command: `npm run build --prefix octofit-tracker/backend`
-- Frontend build command: `npm run build --prefix octofit-tracker/frontend`
+| Command | What it verifies | What a failure means |
+| --- | --- | --- |
+| `npm run test:data --prefix octofit-tracker/backend` | Required model fields and relationships, plus safe, repeatable demo seeding. | Schema validation or seed behavior is incorrect, or the data tier is not preserving unrelated data and reconciling seeded membership. |
+| `npm run test:api --prefix octofit-tracker/backend` | Activity and team creation/listing, invalid-input handling, point totals and leaderboard ranks, and personalized workout suggestions including unknown users. | A route/service response, validation rule, persistence behavior, aggregation, or recommendation does not satisfy the API contract. |
+| `npm test --prefix octofit-tracker/frontend` | Page rendering for API data, route requests, and accessible loading, empty, and error states. | A page or shared API client is not rendering or reporting the expected state accessibly, or is requesting the wrong endpoint. |
+| `npm run build --prefix octofit-tracker/backend` | Backend TypeScript type-check. | Backend types or module references are invalid; correct them before running the API. |
+| `npm run build --prefix octofit-tracker/frontend` | Frontend TypeScript type-check and Vite production build. | Frontend types/imports or production bundling are invalid; the application is not ready to build for deployment. |
